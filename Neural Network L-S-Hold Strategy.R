@@ -1,0 +1,107 @@
+library("quantmod")
+getSymbols("^DJI",src="yahoo") #need VPN to work
+
+#Firstly, set the indicators to be considered in the NN:
+dji<-DJI[,"DJI.Close"]
+ret<-Delt(dji) #Delt calculates the k-period % difference of series
+avg10<-rollapply(dji,10,mean)
+avg20<-rollapply(dji,20,mean)
+std10<-rollapply(dji,10,sd)
+std20<-rollapply(dji,20,sd)
+rsi5<-RSI(dji,5,"SMA")
+rsi14<-RSI(dji,14,"SMA")
+macd12269<-MACD(dji,12,26,9,"SMA")
+macd7205<-MACD(dji,7,20,5,"SMA")
+bbands<-BBands(dji,20,"SMA",2)
+
+#Next, define UP(DOWN) if the return over the last 20 days is greater(less)
+#than 2%(-2%); and NOWHERE if it is in between +/-2%.
+directions<-data.frame(matrix(NA,dim(dji)[1],1))
+lagret<-(dji-Lag(dji,20))/Lag(dji,20)
+directions[lagret>0.02]<-"Up"
+directions[lagret< (-0.02)]<-"Down"
+directions[lagret<0.02 & lagret>-0.02]<-"NoWhere"
+#dim(directions)
+
+dji<-cbind(dji,avg10,avg20,std10,std20,rsi5,rsi14,macd12269,macd7205,bbands)
+#dji
+
+#Splitting the data set into train, validation and test sets:
+train_sdate<-"2010-01-01"
+train_edate<-"2013-12-31"
+vali_sdate<-"2014-01-01"
+vali_edate<-"2014-12-31"
+test_sdate<-"2015-01-01"
+test_edate<-"2015-12-31"
+
+trainrow<-which(index(dji)>=train_sdate & index(dji)<=train_edate)
+valirow<-which(index(dji)>=vali_sdate & index(dji)<=vali_edate)
+testrow<-which(index(dji)>=test_sdate & index(dji)<=test_edate)
+
+traindji<-dji[trainrow,]
+validji<-dji[valirow,]
+testdji<-dji[testrow,]
+
+trainme<-apply(traindji,2,mean)
+trainstd<-apply(traindji,2,sd)
+
+trainidn<-matrix(1,dim(traindji)[1],dim(traindji)[2])
+valiidn<-matrix(1,dim(validji)[1],dim(validji)[2])
+testidn<-matrix(1,dim(testdji)[1],dim(testdji)[2])
+
+norm_traindji<-(traindji-t(trainme*t(trainidn)))/t(trainstd*t(trainidn))
+norm_validji<-(validji-t(trainme*t(valiidn)))/t(trainstd*t(valiidn))
+norm_testdji<-(testdji-t(trainme*t(testidn)))/t(trainstd*t(testidn))
+
+train_direction<-directions[trainrow,1]
+vali_direction<-directions[valirow,1]
+test_direction<-directions[testrow,1]
+
+#Next, use the Neural Network package to construct our model
+library(nnet)
+set.seed(1)
+model<-nnet(norm_traindji,class.ind(train_direction),size = 4,trace = F)
+model
+#Output of the above command says 15-4-3 which means that norm-traindji has
+#15 columns, the size set is 4, and the class.indicator of train_dir has 3 type of outputs
+#being UP, DOWN and NoWhere.
+
+#Do the prediction on the validation set:
+vali_pred<-predict(model,norm_validji)
+head(vali_pred)
+vali_pred_class<-data.frame(matrix(NA,dim(vali_pred)[1],1))
+vali_pred_class[vali_pred[,"Down"]>0.5,1]<-"Down"
+vali_pred_class[vali_pred[,"NoWhere"]>0.5,1]<-"NoWhere"
+vali_pred_class[vali_pred[,"Up"]>0.5,1]<-"Up"
+#vali_pred_class
+
+library(caret)
+matrix<-confusionMatrix(as.factor(vali_pred_class[,1]),as.factor(vali_direction))
+matrix #matrix of validation result shows 88% accuracy
+
+#Test the validation result on the test set:
+test_pred<-predict(model,norm_testdji)
+head(test_pred)
+test_pred_class<-data.frame(matrix(NA,dim(test_pred)[1],1))
+test_pred_class[test_pred[,"Down"]>0.5,1]<-"Down"
+test_pred_class[test_pred[,"NoWhere"]>0.5,1]<-"NoWhere"
+test_pred_class[test_pred[,"Up"]>0.5,1]<-"Up"
+
+test_matrix<-confusionMatrix(as.factor(test_pred_class[,1]),as.factor(test_direction))
+test_matrix #82% accuracy
+#Comment: consistency on accuracy across validation and test set has shown its good generalization power
+
+
+#Advancement: use the classes for signal generation. People buy when they anticipate UP direction and sell when they anticipate DOWN direction
+signal<-ifelse(test_pred_class=="Up",1,ifelse(test_pred_class=="Down",-1,0))
+ret<-ret[testrow]
+#changing (test -> vali or train) can show the strategy of the other sets.
+cost<-0
+trade_ret<-ret*Lag(signal)-cost
+#install.packages("PerformanceAnalytics")
+library(PerformanceAnalytics)
+cumm_ret<-Return.cumulative(trade_ret)
+annual_ret<-Return.annualized(trade_ret)
+
+charts.PerformanceSummary(trade_ret)
+#terrible strategy, but the book says generating profitable strategy is beyond the scope of this book...
