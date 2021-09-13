@@ -1,3 +1,9 @@
+##################################
+#                                #
+#      Logistic Regression       #
+#                                #
+##################################
+
 #install.packages("quantmod")
 #install the package quantmod
 library("quantmod")
@@ -247,3 +253,7 @@ for (i in 1:nrow(norm_osdji)) {
 #withinss
 (ratio_os<-1/(1 + centerss/withinss)) #ratio quite high, maybe the brute ratio calculation is mistaken!
 
+#Application of this algorithm:
+#The reason we do a 3-clustering is because each cluster could be regarded as a group of data where one strategy could be implemented automatically.
+#Given a well-clustered arrangement, newly emerged market signal could be clustered into one of the groups, and we can just trade according to the strategy represented by the group.
+#A simple example is for our 3 clusters to be "UP", "DOWN", and "NoWhere".
