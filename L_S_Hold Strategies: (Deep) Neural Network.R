@@ -1,3 +1,9 @@
+##################################
+#                                #
+#      Deep Neural Network       #
+#                                #
+##################################
+
 library("quantmod")
 getSymbols("^DJI",src="yahoo") #need VPN to work
 
@@ -116,6 +122,7 @@ charts.PerformanceSummary(trade_ret)
 #      Deep Neural Network       #
 #                                #
 ##################################
+
 #install.packages("deepnet")
 library(deepnet)
 set.seed(1)
@@ -136,6 +143,8 @@ for (i in 1:10) {
 plot(t_reaction,type = "l")
 #We can tell that indeed t = 0.4 is the local maximum.
 #For some weird reason, the nn.predict function returned same number for each day...and all of them are below 0.5.
+
+
 
 
 
