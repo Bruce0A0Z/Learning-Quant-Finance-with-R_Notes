@@ -96,6 +96,8 @@ test_matrix #82% accuracy
 signal<-ifelse(test_pred_class=="Up",1,ifelse(test_pred_class=="Down",-1,0))
 ret<-ret[testrow]
 #changing (test -> vali or train) can show the strategy of the other sets.
+#changing the ifelse parameter to decide actions regarding particular signal will change the strategy.
+#e.g. the above signal output says "if UP then buy 1, DOWN then sell 1, NoWhere buy/sell 0".
 cost<-0
 trade_ret<-ret*Lag(signal)-cost
 #install.packages("PerformanceAnalytics")
