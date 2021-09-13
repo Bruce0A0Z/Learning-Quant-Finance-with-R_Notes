@@ -107,3 +107,64 @@ annual_ret<-Return.annualized(trade_ret)
 
 charts.PerformanceSummary(trade_ret)
 #terrible strategy, but the book says generating profitable strategy is beyond the scope of this book...
+
+
+
+
+##################################
+#                                #
+#      Deep Neural Network       #
+#                                #
+##################################
+#install.packages("deepnet")
+library(deepnet)
+set.seed(1)
+dn_model<-dbn.dnn.train(norm_traindji,class.ind(train_direction),hidden = c(3,4,6))
+#in above we had 3 hidden layer structure with 3,4,and 6 in the hidden layer 1,2,and 3
+#class.ind is used to convert 3 directions into column vector where each column represents 1 direction.
+
+#to see accuracy over the validation dataset:
+nn.predict(dn_model,norm_validji)
+nn.test(dn_model,norm_validji,class.ind(vali_direction),t=0.4)
+
+#Comment:we should choose t as per our requirement, to understand the impact of t on accuracy:
+t_reaction<-NULL
+for (i in 1:10) {
+  t_reaction[i]<-nn.test(dn_model,norm_validji,class.ind(vali_direction),t=i/10)
+  
+}
+plot(t_reaction,type = "l")
+#We can tell that indeed t = 0.4 is the local maximum.
+#For some weird reason, the nn.predict function returned same number for each day...and all of them are below 0.5.
+
+
+
+##################################
+#                                #
+#      H2o for Deep Learning     #
+#                                #
+##################################
+
+#H2o is another package which can be used for deep neural network learning.
+#It is implemented in Java and can use multithreads and multinodes of the CPU;
+#however, deepnet is implemented in R itself and uses only a single thread
+#and doesn't have the flexibility to use multithreads and multinodes of the CPU.
+#The following commands install and load it into the workspace:
+install.packages("h2o")
+library("h2o")
+h2o.init() #H2o needs 64-bit Java
+
+#try the following codes when your computer has 64-bit JAVA:
+
+#data<-cbind(as.data.frame(norm_traindji),train_direction)
+#class(norm_traindji)
+#class(train_direction)
+
+#datah2o<-as.h2o(data,"h2o")
+#class(datah2o)
+#dim(datah2o)
+#model<-h2o.deeplearning(1:15,16,training_frame = datah2o,hidden = c(4,5,2,7))
+#vali_pred<-predict(model,as.h2o(norm_validji,"h2o"))
+#vali_pred<-as.data.frame(vali_pred)
+#vali_pred_class<-data.frame(matrix(NA,dim(vali_pred)[1],1))
+#the following follows from before - figure it out yourself.
