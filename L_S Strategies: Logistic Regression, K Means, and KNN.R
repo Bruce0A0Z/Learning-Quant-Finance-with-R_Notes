@@ -257,3 +257,65 @@ for (i in 1:nrow(norm_osdji)) {
 #The reason we do a 3-clustering is because each cluster could be regarded as a group of data where one strategy could be implemented automatically.
 #Given a well-clustered arrangement, newly emerged market signal could be clustered into one of the groups, and we can just trade according to the strategy represented by the group.
 #A simple example is for our 3 clusters to be "UP", "DOWN", and "NoWhere".
+
+
+
+
+
+
+##################################
+#                                #
+#     K Nearest Neighborhood     #
+#                                #
+##################################
+
+library(class)
+#norm_isdji<-norm_isdji[,-dim(norm_isdji)[2]]
+#norm_osdji<-norm_osdji[,-dim(norm_osdji)[2]]
+#The above codes are to remove the last column "directions" from data, It's taken out here because we have done so in K Means section above.
+
+dji<-DJI[, "DJI.Close"]
+lagret<-(dji-Lag(dji,20))/Lag(dji,20)
+
+directions<-NULL
+directions[lagret>0.02]<-"Up"
+directions[lagret< (-0.02)]<-"Down"
+directions[lagret<0.02 & lagret>-0.02]<-"NoWhere"
+isdir<-directions[isrow]
+osdir<-directions[osrow]
+
+neighbourhood<-3
+set.seed(1)
+model<-knn(norm_isdji,norm_osdji,isdir,neighbourhood)
+#knn() takes 3 mandatory parameters which are the normalized sample data, normalized out-sample data, and the training labeled data.
+#knn()'s 4th parameter is optional, R will consider default 1 if not specified.
+
+#knn() returns classes over the out-sample data, we check it:
+head(model)
+summary(model)
+
+#Test the accuracy of the model:
+library(caret)
+matrix<-confusionMatrix(as.factor(model),as.factor(osdir))
+matrix #~78% accuracy
+
+diag(matrix$table) #this tells how well the model agrees with osdir
+
+accuracy<-NULL
+for (i in 1:30) {
+  
+  #set.seed(1) if don't set seed then different runs of the loop might be incomparable.
+  model<-knn(norm_isdji,norm_osdji,isdir,i)
+  matrix<-confusionMatrix(as.factor(model),as.factor(osdir))
+  diag<-sum(diag(matrix$table))
+  total<-sum(matrix$table)
+  accuracy[i]<-(total-diag)/total
+
+}
+#accuracy gives the error rate and needs to be minimised
+plot(accuracy,type = 'l')
+#Analysis of the plot:
+#1. to find a minimum, either local or global
+#2. to guarantee the stability of the minimum: if the error rate peak immediately after, then this minimum is not stable. So don't choose it.
+#3. in summary, to find a minimum in a segment with least volatility.
+
