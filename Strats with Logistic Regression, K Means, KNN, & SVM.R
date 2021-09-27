@@ -114,8 +114,10 @@ osmatrix
 
 #To be studied:
 # - meaning of RSI,MACD,SMA,Bollinger Band,etc.
-
-
+#RSI:The relative strength index (RSI) is a momentum indicator used in technical analysis that measures the magnitude of recent price changes to evaluate overbought or oversold conditions in the price of a stock or other asset.
+#MACD:Moving average convergence divergence (MACD) is a trend-following momentum indicator that shows the relationship between two moving averages of a security’s price. The MACD is calculated by subtracting the 26-period exponential moving average (EMA) from the 12-period EMA.
+#SMA:Simple moving average.
+#Bollinger Band:Bollinger Bands are envelopes plotted at a standard deviation level above and below a simple moving average of the price.
 
 
 
@@ -151,8 +153,10 @@ plot(ratio_string,type = "l")
 #Because K Means is a minimization problem, the smaller the ratio the better
 #And the above for loop showed: the more clusters, the lower ratio.
 #However, there is the potential over-fitting problem.
+
 #Q:How to find the optimal number of clusters?
-#A:
+#A:There are 2 methods. Elbow Method plots the within-cluster sum of square (WCSS) against the number of clusters (k), and the ideal value of k corresponds to an abruptly decreasing trend of WCSS.
+#The Sihouette Method calculates the sihouette coefficient of each point and picks the value of k giving sihouette coeffs closer to 1.
 
 
 #Now go to out-sample data:
